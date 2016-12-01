@@ -65,23 +65,10 @@ int main(int argc, char **argv){
     ParserDatas *datas;
     char *infile;
     try {
-        switch (argc) {
-            case 2:
-                infile = argv[1];
-                datas = parseInputFile(infile);
-                checkParameters(datas);
-                priceAtZero(datas);
-                break;
-            case 3:
-                infile = argv[2];
-                datas = parseInputFile(infile);
-                checkParameters(datas);
-                computePnL(datas);
-                break;
-            default:
-                throw invalid_argument(
-                        "(Invalid Arguement) Please call pricer executable as follows : \n./pricer fichier_input \n./pricer -c fichier_input \n");
-        }
+        infile = argv[1];
+        datas = parseInputFile(infile);
+        checkParameters(datas);
+        priceAtZero(datas);
     }catch(exception const& e){
         cerr << "[ERREUR] : " << e.what();
         return EXIT_FAILURE;
@@ -111,120 +98,20 @@ void priceAtZero(ParserDatas *datas) {
     double price;
     double ic;
     monteCarlo->price(price,ic);
-    PnlMat *past = pnl_mat_create_from_zero(1,model->size_);
-    pnl_mat_set_row(past,model->spot_,0);
-    PnlVect *delta = pnl_vect_create(model->size_);
-    monteCarlo->delta(past,0,delta);
+
 
     // Display results
     displayParameters(datas);
     cout << "\n -----> Price [ " << price << " ]\n";
-    cout << "\n -----> IC [ " << ic << " ]\n\n";
-    cout << "\n -----> Delta : \n";
-    pnl_vect_print(delta);
-
+    cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
+    cout << "\n------> Standard Deviation : " << ic / 1.96 << endl;
+    cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
+    cout << "\n------> Time of calculation : " << endl;
     // Free
     delete model;
     delete monteCarlo;
 }
 
-/**
- * One step of Vi
- */
-double hedging(MonteCarlo *monteCarlo, double& V_iMinus1, double capitalizationFactor,
-               PnlVect *deltas_iMinus1, PnlVect *Stau_i, PnlMat *past, double t, double &pi);
-void computePnL(ParserDatas *datas) {
-    double r = datas->r;
-    double T = datas->option->T_;
-    int N = datas->option->nbTimeSteps_;
-    int H = (datas->nbHedging == 0) ? 2 * N : datas->nbHedging;
-    int size = datas->option->size_;
-    double marketStep = T/(double)H;
-
-    double capitalizationFactor = exp(( r * T) / (double)H);
-
-    // Model initialisation
-    BlackScholesModel *model = new BlackScholesModel(
-            datas->option->size_, r, datas->rho,
-            datas->sigma, datas->spot, datas->trend, H, T);
-
-    // MonteCarlo initialisation
-    MonteCarlo* monteCarlo = new MonteCarlo(model, datas->option, datas->nbSamples,datas->fdstep);
-
-    // Market initialisation
-    PnlMat *market = pnl_mat_new();
-    model->simul_market(size,market);
-    // Création du portefeuille et du vecteur de PnL (PnL à chaque date)
-    PnlVect *pnlAtDate = pnl_vect_create(H + 1);
-    // Initialisation
-    //Delta prec
-    PnlVect *deltas_iMinus1 = pnl_vect_create(size);
-    //Stau courant, les prix au temps i des actifs
-    PnlVect *Stau_i = pnl_vect_new();
-    pnl_mat_get_row(Stau_i, market, 0);
-    PnlMat *past = pnl_mat_create(1, size);
-    pnl_mat_set_row(past, model->spot_, 0);
-    //pnl_mat_set_row(past, model->spot_, 1);
-    double price,ic;
-    monteCarlo->price(price,ic);
-    monteCarlo->delta(past,0,deltas_iMinus1);
-    double V_iMinus1 = price  - pnl_vect_scalar_prod(deltas_iMinus1,Stau_i);
-    LET(pnlAtDate, 0) = 0; // Par construction
-    // Foreach date
-    int iN = 1;
-    for (int i = 1; i < pnlAtDate->size; ++i) {
-        double t = i * marketStep;
-        pnl_mat_get_row(Stau_i, market, i);
-        // Si on a passé le prochain pas du modèle ( non du marché ) // TODO Modifier le test dans le cas où N non multiple de H ?
-
-        if ((i * marketStep) >= iN * T/N){
-            pnl_mat_add_row(past, past->m, Stau_i);
-            iN++;
-        }else{
-            pnl_mat_set_row(past, Stau_i, past->m - 1);
-        }
-
-        LET(pnlAtDate, i) = hedging(monteCarlo, V_iMinus1, capitalizationFactor, deltas_iMinus1, Stau_i, past,t,price);
-    }
-
-    // Display result
-    displayParameters(datas);
-    cout << "\n-----> Pay-Off [ " << price << " ]";
-    cout << "\n-----> PnL [ " << GET(pnlAtDate, H) << " ]\n";
-    cout << "\n\n\n Marché : \n\n";
-    pnl_mat_print(market);
-    cout << "\n\n PnL at date : \n";
-    pnl_vect_print(pnlAtDate);
-
-    // Free
-    delete model;
-    delete monteCarlo;
-    pnl_mat_free(&market);
-    pnl_vect_free(&pnlAtDate);
-    pnl_vect_free(&deltas_iMinus1);
-    pnl_vect_free(&Stau_i);
-    pnl_mat_free(&past);
-
-}
-
-double hedging(MonteCarlo *monteCarlo, double& V_iMinus1, double capitalizationFactor, PnlVect *deltas_iMinus1, PnlVect *Stau_i, PnlMat *past, double t, double &price){
-    PnlVect *delta_i = pnl_vect_create(deltas_iMinus1->size);
-    monteCarlo->delta(past,t,delta_i);
-
-    double deltas_iStau_i = pnl_vect_scalar_prod(delta_i,Stau_i);
-    double deltas_iMinus1Stau_i = pnl_vect_scalar_prod(deltas_iMinus1,Stau_i);
-
-    double Vi = V_iMinus1 * capitalizationFactor - (deltas_iStau_i - deltas_iMinus1Stau_i);
-
-    double ic;
-    monteCarlo->price(past,t,price,ic);
-
-    double pi = deltas_iStau_i + Vi;
-
-    V_iMinus1 = Vi;
-
-    return pi - price;
-}
 
 ParserDatas *parseInputFile(char *infile)
 {

@@ -36,28 +36,6 @@ public:
      */
     void price(double &prix, double &ic);
 
-    /**
-     * Calcule le prix de l'option à la date t
-     *
-     * @param[in]  past contient la trajectoire du sous-jacent
-     * jusqu'à l'instant t
-     * @param[in] t date à laquelle le calcul est fait
-     * @param[out] prix contient le prix
-     * @param[out] ic contient la largeur de l'intervalle
-     * de confiance sur le calcul du prix
-     */
-    void price(const PnlMat *past, double t, double &prix, double &ic);
-
-    /**
-     * Calcule le delta de l'option à la date t
-     *
-     * @param[in] past contient la trajectoire du sous-jacent
-     * jusqu'à l'instant t
-     * @param[in] t date à laquelle le calcul est fait
-     * @param[out] delta contient le vecteur de delta
-     * de confiance sur le calcul du delta
-     */
-    void delta(const PnlMat *past, double t, PnlVect *delta);
 
     /**
      *
@@ -72,13 +50,7 @@ private:
      *
      * @return Le pay-off de l'option avec une simulation du sous-jacent
      */
-    double payOffSimulation(const PnlMat *past = NULL, double t = 0);
 
-    /**
-     * Permet une simulation de la différence de pay-off avec les simulations shiftées
-     *
-     * @brief La différence de pay-off de l'option avec la simulation shiftée pour chaque sous-jacent se trouve
-     * @brief dans payOffDiff
-     */
-    void payOffSimulationShiftedDiff(PnlVect *payOffDiff ,const PnlMat *past = NULL, double t = 0);
+    double payOffSimulation();
+
 };

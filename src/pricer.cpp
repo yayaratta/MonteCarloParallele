@@ -1,10 +1,10 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <iostream>
-
 #include "MonteCarlo.hpp"
 #include "BlackScholesModel.hpp"
 #include "Options/Option.hpp"
+#include <mpi.h>
 #include "../src/parser.hpp"
 #include "Options/OptionBasket.hpp"
 #include "Options/AsianOption.hpp"
@@ -97,6 +97,7 @@ void priceAtZero(ParserDatas *datas) {
     // compute price
     double price;
     double ic;
+    double start,end;
     monteCarlo->price(price,ic);
 
 

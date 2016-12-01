@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(mc-pricer CXX)
+project(mc-pricer C CXX)
 
 # Prefix
 if (NOT PREFIX)
@@ -8,7 +8,7 @@ endif (NOT PREFIX)
 set(CMAKE_INSTALL_PREFIX ${PREFIX} CACHE STRING "Installation prefix." FORCE)
 
 if (CXX)
-    set(CMAKE_CXX_COMPILER ${CXX})
+    set(CMAKE_CXX_COMPILER ${MPI_RUN})
 endif (CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -18,6 +18,27 @@ if (NOT CMAKE_BUILD_TYPE)
     message(STATUS "Setting build type to 'Debug' as none was specified.")
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif ()
+
+# Detect OMP
+find_package(OpenMP REQUIRED)
+if (OPENMP_FOUND)
+    set (CMAKE_C_FLAGS ${CMAKE_C_CFLAGS} ${OpenMP_C_FLAGS})
+    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_CFLAGS} ${OpenMP_CXX_FLAGS})
+else (OPENMP_FOUND)
+    message(STATUS "OpenMP not found.")
+endif (OPENMP_FOUND)
+
+#Detect MPI
+set(MPI_LIBS)
+find_package(MPI REQUIRED)
+if (MPI_C_FOUND)
+    include_directories(${MPI_C_INCLUDE_PATH})
+    set (MPI_LIBS ${MPI_LIBS} ${MPI_C_LIBRARIES})
+    add_definitions(-DOMPI_SKIP_MPICXX)
+else (MPI_C_FOUND)
+    message(STATUS "MPI not found.")
+endif (MPI_C_FOUND)
+
 
 
 # Detect Boost

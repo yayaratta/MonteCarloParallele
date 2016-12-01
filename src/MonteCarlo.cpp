@@ -42,8 +42,6 @@ void MonteCarlo::price(double &prix, double &ic) {
     prix = discountFactor * espEstimation;
     ic = (1.96) * sqrt(varEstimateur/(double)nbSamples_);
 
-
-
 }
 
 

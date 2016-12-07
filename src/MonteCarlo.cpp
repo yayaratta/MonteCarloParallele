@@ -44,6 +44,15 @@ void MonteCarlo::price(double &prix, double &ic) {
 
 }
 
+void MonteCarlo::price_master(double &prix, double &ic) {
+
+
+}
+
+void MonteCarlo::price_slave(double &prix, double &ic) {
+
+}
+
 
 
 

@@ -8,7 +8,7 @@ endif (NOT PREFIX)
 set(CMAKE_INSTALL_PREFIX ${PREFIX} CACHE STRING "Installation prefix." FORCE)
 
 if (CXX)
-    set(CMAKE_CXX_COMPILER ${MPI_RUN})
+    set(CMAKE_CXX_COMPILER ${CXX})
 endif (CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -23,13 +23,13 @@ endif ()
 #Detect MPI
 set(MPI_LIBS)
 find_package(MPI REQUIRED)
-if (MPI_C_FOUND)
+if (MPI_CXX_FOUND)
     include_directories(${MPI_C_INCLUDE_PATH})
-    set (MPI_LIBS ${MPI_LIBS} ${MPI_C_LIBRARIES})
+    set (MPI_LIBS ${MPI_LIBS} ${MPI_CXX_LIBRARIES})
     add_definitions(-DOMPI_SKIP_MPICXX)
-else (MPI_C_FOUND)
+else (MPI_CXX_FOUND)
     message(STATUS "MPI not found.")
-endif (MPI_C_FOUND)
+endif (MPI_CXX_FOUND)
 
 
 

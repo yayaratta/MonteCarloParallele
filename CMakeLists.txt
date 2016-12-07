@@ -8,7 +8,7 @@ endif (NOT PREFIX)
 set(CMAKE_INSTALL_PREFIX ${PREFIX} CACHE STRING "Installation prefix." FORCE)
 
 if (CXX)
-    set(CMAKE_CXX_COMPILER ${MPI_RUN})
+    set(CMAKE_CXX_COMPILER ${CXX})
 endif (CXX)
 
 set(CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake ${CMAKE_MODULE_PATH})
@@ -31,13 +31,13 @@ endif (OPENMP_FOUND)
 #Detect MPI
 set(MPI_LIBS)
 find_package(MPI REQUIRED)
-if (MPI_C_FOUND)
+if (MPI_CXX_FOUND)
     include_directories(${MPI_C_INCLUDE_PATH})
-    set (MPI_LIBS ${MPI_LIBS} ${MPI_C_LIBRARIES})
+    set (MPI_LIBS ${MPI_LIBS} ${MPI_CXX_LIBRARIES})
     add_definitions(-DOMPI_SKIP_MPICXX)
-else (MPI_C_FOUND)
+else (MPI_CXX_FOUND)
     message(STATUS "MPI not found.")
-endif (MPI_C_FOUND)
+endif (MPI_CXX_FOUND)
 
 
 
@@ -61,20 +61,10 @@ set(LIBS ${LIBS} m)
 
 # Testing pnl Library example
 
-#Testing BlackScholesModel
-add_executable(BSModelAsset_t-test.te src/tests/test_BlackScholesAsset_t.cpp src/BlackScholesModel.cpp)
-target_link_libraries(BSModelAsset_t-test.te ${LIBS})
-add_executable(BSModelAssetShift.te src/tests/test_BlackScholesAssetShift.cpp src/BlackScholesModel.cpp)
-target_link_libraries(BSModelAssetShift.te ${LIBS})
-add_executable(BSModelDelta-test0.te src/tests/test_delta0.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-target_link_libraries(BSModelDelta-test0.te ${LIBS})
-add_executable(BSModelDelta-test_t.te src/tests/test_delta_t.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-target_link_libraries(BSModelDelta-test_t.te ${LIBS})
+
 #Testing MonteCarlo
 add_executable(MonteCarloPrice0-test.te src/tests/test_MonteCarloPrice0.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
 target_link_libraries(MonteCarloPrice0-test.te ${LIBS})
-add_executable(MonteCarloPrice_t-test.te src/tests/test_MonteCarloPrice_t.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
-target_link_libraries(MonteCarloPrice_t-test.te ${LIBS})
 #Testing Options
 
 #Testing Pricer

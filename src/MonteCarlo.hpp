@@ -37,6 +37,11 @@ public:
     void price(double &prix, double &ic);
 
 
+    void price_master(double &prix, double &ic);
+
+
+    void price_slave(double &prix, double &ic);
+
     /**
      *
      *Destructeur de MonteCarlo

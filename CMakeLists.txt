@@ -19,14 +19,6 @@ if (NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
 endif ()
 
-# Detect OMP
-find_package(OpenMP REQUIRED)
-if (OPENMP_FOUND)
-    set (CMAKE_C_FLAGS ${CMAKE_C_CFLAGS} ${OpenMP_C_FLAGS})
-    set (CMAKE_CXX_FLAGS ${CMAKE_CXX_CFLAGS} ${OpenMP_CXX_FLAGS})
-else (OPENMP_FOUND)
-    message(STATUS "OpenMP not found.")
-endif (OPENMP_FOUND)
 
 #Detect MPI
 set(MPI_LIBS)
@@ -62,19 +54,19 @@ set(LIBS ${LIBS} m)
 # Testing pnl Library example
 
 #Testing BlackScholesModel
-add_executable(BSModelAsset_t-test.te src/tests/test_BlackScholesAsset_t.cpp src/BlackScholesModel.cpp)
-target_link_libraries(BSModelAsset_t-test.te ${LIBS})
-add_executable(BSModelAssetShift.te src/tests/test_BlackScholesAssetShift.cpp src/BlackScholesModel.cpp)
-target_link_libraries(BSModelAssetShift.te ${LIBS})
-add_executable(BSModelDelta-test0.te src/tests/test_delta0.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-target_link_libraries(BSModelDelta-test0.te ${LIBS})
-add_executable(BSModelDelta-test_t.te src/tests/test_delta_t.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-target_link_libraries(BSModelDelta-test_t.te ${LIBS})
+#add_executable(BSModelAsset_t-test.te src/tests/test_BlackScholesAsset_t.cpp src/BlackScholesModel.cpp)
+#target_link_libraries(BSModelAsset_t-test.te ${LIBS})
+#add_executable(BSModelAssetShift.te src/tests/test_BlackScholesAssetShift.cpp src/BlackScholesModel.cpp)
+#target_link_libraries(BSModelAssetShift.te ${LIBS})
+#add_executable(BSModelDelta-test0.te src/tests/test_delta0.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
+#target_link_libraries(BSModelDelta-test0.te ${LIBS})
+#add_executable(BSModelDelta-test_t.te src/tests/test_delta_t.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
+#target_link_libraries(BSModelDelta-test_t.te ${LIBS})
 #Testing MonteCarlo
 add_executable(MonteCarloPrice0-test.te src/tests/test_MonteCarloPrice0.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
 target_link_libraries(MonteCarloPrice0-test.te ${LIBS})
-add_executable(MonteCarloPrice_t-test.te src/tests/test_MonteCarloPrice_t.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
-target_link_libraries(MonteCarloPrice_t-test.te ${LIBS})
+#add_executable(MonteCarloPrice_t-test.te src/tests/test_MonteCarloPrice_t.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
+#target_link_libraries(MonteCarloPrice_t-test.te ${LIBS})
 #Testing Options
 
 #Testing Pricer

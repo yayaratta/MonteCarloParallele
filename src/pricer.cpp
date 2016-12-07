@@ -61,7 +61,7 @@ void checkParameters(ParserDatas *datas);
 //////////////////////////////////// MAIN ///////////////////////////////////////////
 
 int main(int argc, char **argv){
-
+    MPI_Init(&argc,&argv);    
     ParserDatas *datas;
     char *infile;
     try {
@@ -76,7 +76,7 @@ int main(int argc, char **argv){
 
     // Free
     free(datas);
-
+    MPI_Finalize();
     return EXIT_SUCCESS;
 
 }

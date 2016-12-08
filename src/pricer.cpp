@@ -98,30 +98,54 @@ void priceAtZero(ParserDatas *datas) {
     // MonteCarlo initialisation
     int rank;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    double mean;
+    double var;
+    double price;
+    double stdDev;
+    double ic;
+    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep,rank);
+    double espEstimation;
+    double varToAgregate;
     if(rank != 0){
 
-        MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep);
 
         // compute price
-        double price;
-        double ic;
-        double start,end;
-        monteCarlo->price(price,ic);
+        //double price;
 
+        double start,end;
+        int nbSamples_Slave;
+        int temp = datas->nbSamples/(size - 1);
+        nbSamples_Slave = (rank <= (datas->nbSamples % (size - 1))) ? (temp + 1) : temp;
+        //monteCarlo->price(price,ic);
+        monteCarlo->price_slave(espEstimation,varToAgregate,nbSamples_Slave);
 
         // Display results
-        displayParameters(datas);
-        cout << "\n -----> Price [ " << price << " ]\n";
-        cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
-        cout << "\n------> Standard Deviation : " << ic / 1.96 << endl;
-        cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
-        cout << "\n------> Time of calculation : " << endl;
-        // Free
-        delete model;
-        delete monteCarlo;
 
 
     }
+
+    MPI_Reduce(&espEstimation,&mean,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    MPI_Reduce(&varToAgregate,&var,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+
+    if(rank == 0){
+
+        monteCarlo->price_master(price,stdDev,var,mean);
+        ic = 1.96*stdDev;
+
+        displayParameters(datas);
+        cout << "\n -----> Price [ " << price << " ]\n";
+        cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
+        cout << "\n------> Standard Deviation : " << stdDev << endl;
+        cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
+        cout << "\n------> Time of calculation : " << endl;
+
+
+    }
+
+    delete model;
+    delete monteCarlo;
 
 }
 

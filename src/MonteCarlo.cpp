@@ -7,12 +7,11 @@ using namespace std;
 
 #include "MonteCarlo.hpp"
 
-MonteCarlo::MonteCarlo(BlackScholesModel *model, Option *option, int nbSamples, double fdStep) {
+MonteCarlo::MonteCarlo(BlackScholesModel *model, Option *option, int nbSamples, double fdStep,double rank) {
     mod_ = model;
     opt_ = option;
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    rng_ = pnl_rng_dcmt_create_id(rank,time(NULL));
+    rng_ = pnl_rng_dcmt_create_id(rank,PNL_RNG_MERSENNE);
+    pnl_rng_sseed(rng_,time(NULL));
     //rng_ = pnl_rng_create(PNL_RNG_MERSENNE);
     //pnl_rng_sseed(rng_, time(NULL));
     fdStep_ = (fdStep == 0) ? DEFAULT_VALUE_FDSTEP : fdStep;
@@ -48,12 +47,36 @@ void MonteCarlo::price(double &prix, double &ic) {
 
 }
 
-void MonteCarlo::price_master(double &prix, double &ic) {
+void MonteCarlo::price_master(double &prix, double &stdDev, double &varEstimateur,double &espEstimation) {
+
+    double T = opt_->T_;
+    double r = mod_->r_;
+    double discountFactor = exp(-r*T);
+    prix = discountFactor * espEstimation;
+
+    espEstimation /= (double)nbSamples_;
+    varEstimateur /= (double)nbSamples_;
+    varEstimateur = exp(-2*r*T)*fabs(varEstimateur - espEstimation * espEstimation);
+
+    prix = discountFactor * espEstimation;
+    stdDev = sqrt(varEstimateur/(double)nbSamples_);
 
 
 }
 
-void MonteCarlo::price_slave(double &prix, double &ic) {
+void MonteCarlo::price_slave(double &espEstimation, double &varEstimateur,int nbSamples) {
+
+    double T = opt_->T_;
+    double r = mod_->r_;
+
+
+    espEstimation = 0;
+    varEstimateur = 0;
+    for (int j = 0; j < nbSamples; ++j) {
+        double estimation = payOffSimulation();
+        espEstimation += estimation;
+        varEstimateur += estimation * estimation;
+    }
 
 }
 

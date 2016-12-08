@@ -26,7 +26,7 @@ public:
      * @param[in] nbSamples : Le nombre de tirage de Monte Carlo
      * @param[in] fdStep : Le pas de différence finie
      */
-    MonteCarlo(BlackScholesModel *model,Option *option, int nbSamples = DEFAULT_VALUE_NBSAMPLES, double fdStep = DEFAULT_VALUE_FDSTEP);
+    MonteCarlo(BlackScholesModel *model,Option *option, int nbSamples = DEFAULT_VALUE_NBSAMPLES, double fdStep = DEFAULT_VALUE_FDSTEP,double rank=0);
 
     /**
      * Calcule le prix de l'option à la date 0
@@ -37,10 +37,10 @@ public:
     void price(double &prix, double &ic);
 
 
-    void price_master(double &prix, double &ic);
+    void price_master(double &prix, double &stdDev,double &varEstimation,double &espEstimation);
 
 
-    void price_slave(double &prix, double &ic);
+    void price_slave(double &espEstimation, double &varEstimation, int nbSamples);
 
     /**
      *

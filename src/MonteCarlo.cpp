@@ -1,6 +1,7 @@
 #include "cstdlib"
 #include <math.h>
 #include <time.h>
+#include "mpi.h"
 #include "iostream"
 using namespace std;
 
@@ -9,8 +10,11 @@ using namespace std;
 MonteCarlo::MonteCarlo(BlackScholesModel *model, Option *option, int nbSamples, double fdStep) {
     mod_ = model;
     opt_ = option;
-    rng_ = pnl_rng_create(PNL_RNG_MERSENNE);
-    pnl_rng_sseed(rng_, time(NULL));
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    rng_ = pnl_rng_dcmt_create_id(rank,time(NULL));
+    //rng_ = pnl_rng_create(PNL_RNG_MERSENNE);
+    //pnl_rng_sseed(rng_, time(NULL));
     fdStep_ = (fdStep == 0) ? DEFAULT_VALUE_FDSTEP : fdStep;
     nbSamples_ = nbSamples;
     path = pnl_mat_create(opt_->nbTimeSteps_ + 1, mod_->size_);

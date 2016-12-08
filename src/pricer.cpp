@@ -63,8 +63,7 @@ void checkParameters(ParserDatas *datas);
 int main(int argc, char **argv){
     MPI_Init(&argc,&argv);    
 //    MPI_Init(&argc, &argv);
-    int rank;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
     ParserDatas *datas;
     char *infile;
     try {
@@ -97,25 +96,33 @@ void priceAtZero(ParserDatas *datas) {
             datas->sigma,datas->spot);
 
     // MonteCarlo initialisation
-    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep);
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    if(rank != 0){
 
-    // compute price
-    double price;
-    double ic;
-    double start,end;
-    monteCarlo->price(price,ic);
+        MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep);
+
+        // compute price
+        double price;
+        double ic;
+        double start,end;
+        monteCarlo->price(price,ic);
 
 
-    // Display results
-    displayParameters(datas);
-    cout << "\n -----> Price [ " << price << " ]\n";
-    cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
-    cout << "\n------> Standard Deviation : " << ic / 1.96 << endl;
-    cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
-    cout << "\n------> Time of calculation : " << endl;
-    // Free
-    delete model;
-    delete monteCarlo;
+        // Display results
+        displayParameters(datas);
+        cout << "\n -----> Price [ " << price << " ]\n";
+        cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
+        cout << "\n------> Standard Deviation : " << ic / 1.96 << endl;
+        cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
+        cout << "\n------> Time of calculation : " << endl;
+        // Free
+        delete model;
+        delete monteCarlo;
+
+
+    }
+
 }
 
 

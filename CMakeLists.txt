@@ -7,6 +7,7 @@ if (NOT PREFIX)
 endif (NOT PREFIX)
 set(CMAKE_INSTALL_PREFIX ${PREFIX} CACHE STRING "Installation prefix." FORCE)
 
+#Peut etre erreur
 if (CXX)
     set(CMAKE_CXX_COMPILER ${CXX})
 endif (CXX)
@@ -24,14 +25,12 @@ endif ()
 set(MPI_LIBS)
 find_package(MPI REQUIRED)
 if (MPI_CXX_FOUND)
-    include_directories(${MPI_C_INCLUDE_PATH})
+    include_directories(${MPI_CXX_INCLUDE_PATH})
     set (MPI_LIBS ${MPI_LIBS} ${MPI_CXX_LIBRARIES})
     add_definitions(-DOMPI_SKIP_MPICXX)
 else (MPI_CXX_FOUND)
     message(STATUS "MPI not found.")
 endif (MPI_CXX_FOUND)
-
-
 
 # Detect Boost
 set(Boost_NO_BOOST_CMAKE ON)
@@ -72,7 +71,7 @@ target_link_libraries(MonteCarloPrice0-test.te ${LIBS})
 #Testing Pricer
 
 add_executable(pricer src/parser.cpp src/pricer.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp src/Options/OptionBasket.cpp src/Options/AsianOption.cpp src/Options/PerformanceOption.cpp)
-target_link_libraries(pricer ${LIBS})
+target_link_libraries(pricer ${MPI_LIBS} ${LIBS})
 install(TARGETS pricer DESTINATION bin)
 
 

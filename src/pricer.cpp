@@ -89,7 +89,7 @@ int main(int argc, char **argv){
 
 void displayParameters(ParserDatas *datas);
 void priceAtZero(ParserDatas *datas) {
-
+    double start = MPI_Wtime();
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
@@ -128,7 +128,7 @@ void priceAtZero(ParserDatas *datas) {
 
     MPI_Reduce(&espEstimation,&mean,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     MPI_Reduce(&varToAgregate,&var,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-
+    double end = MPI_Wtime();
     if(rank == 0){
 
         monteCarlo->price_master(price,stdDev,var,mean);
@@ -139,7 +139,7 @@ void priceAtZero(ParserDatas *datas) {
         cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
         cout << "\n------> Standard Deviation : " << stdDev << endl;
         cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
-        cout << "\n------> Time of calculation : " << endl;
+        cout << "\n------> Time of calculation : " << end - start << "seconds" << endl;
 
 
     }

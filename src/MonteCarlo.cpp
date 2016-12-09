@@ -47,20 +47,23 @@ void MonteCarlo::price(double &prix, double &ic) {
 
 }
 
-void MonteCarlo::price_master(double &prix, double &stdDev, double &varEstimateur,double &espEstimation) {
+void MonteCarlo::price_master(double &prix, double &stdDev, double &varEstimateur,double &espEstimation,double nbSamples) {
 
     double T = opt_->T_;
     double r = mod_->r_;
     double discountFactor = exp(-r*T);
-    prix = discountFactor * espEstimation;
+    //prix = discountFactor * espEstimation;
+//Pq fait on une MAJ de la var et de l'esp ?
+    /*espEstimation /= (double)nbSamples;
+    varEstimateur /= (double)nbSamples;
+    varEstimateur = exp(-2*r*T)*fabs(varEstimateur - espEstimation * espEstimation);*/
+    double newEspEstimation = espEstimation / (double)nbSamples;
+    double newVarEstimateur = varEstimateur / (double)nbSamples;
+    newVarEstimateur = exp(-2*r*T)*fabs(newVarEstimateur - newEspEstimation * newEspEstimation);
 
-    espEstimation /= (double)nbSamples_;
-    varEstimateur /= (double)nbSamples_;
-    varEstimateur = exp(-2*r*T)*fabs(varEstimateur - espEstimation * espEstimation);
-
-    prix = discountFactor * espEstimation;
-    stdDev = sqrt(varEstimateur/(double)nbSamples_);
-
+    prix = discountFactor * newEspEstimation;
+    stdDev = sqrt(newVarEstimateur/(double)nbSamples);
+    std::cout << "Le pix intermediaie est : " << prix << endl;
 
 }
 

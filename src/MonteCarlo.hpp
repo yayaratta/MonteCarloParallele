@@ -37,7 +37,7 @@ public:
     void price(double &prix, double &ic);
 
 
-    void price_master(double &prix, double &stdDev,double &varEstimation,double &espEstimation);
+    void price_master(double &prix, double &stdDev,double &varEstimation,double &espEstimation,double nbSamples);
 
 
     void price_slave(double &espEstimation, double &varEstimation, int nbSamples);

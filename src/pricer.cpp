@@ -9,7 +9,7 @@
 #include "Options/OptionBasket.hpp"
 #include "Options/AsianOption.hpp"
 #include "Options/PerformanceOption.hpp"
-
+#include <string>
 
 using namespace std;
 
@@ -58,6 +58,8 @@ ParserDatas *parseInputFile(char *infile);
  */
 void checkParameters(ParserDatas *datas);
 
+void priceAtZeroWithPrecision(ParserDatas *datas,double precision);
+
 //////////////////////////////////// MAIN ///////////////////////////////////////////
 
 int main(int argc, char **argv){
@@ -66,16 +68,33 @@ int main(int argc, char **argv){
 
     ParserDatas *datas;
     char *infile;
+    double test = 0;
     try {
-        infile = argv[1];
-        datas = parseInputFile(infile);
-        checkParameters(datas);
-        priceAtZero(datas);
+        switch (argc) {
+            case 2:
+                infile = argv[1];
+                datas = parseInputFile(infile);
+                checkParameters(datas);
+                priceAtZero(datas);
+                break;
+            case 3:
+                infile = argv[1];
+                datas = parseInputFile(infile);
+                checkParameters(datas);
+
+                test = atof(argv[2]);
+                priceAtZeroWithPrecision(datas,test);
+                break;
+            default:
+                throw invalid_argument(
+                        "(Invalid Arguement) Please call pricer executable as follows : \n./pricer fichier_input \n./pricer -c fichier_input \n");
+        }
+
+
     }catch(exception const& e){
         cerr << "[ERREUR] : " << e.what();
         return EXIT_FAILURE;
     }
-
     // Free
     free(datas);
     MPI_Finalize();
@@ -131,9 +150,9 @@ void priceAtZero(ParserDatas *datas) {
     double end = MPI_Wtime();
     if(rank == 0){
 
-        monteCarlo->price_master(price,stdDev,var,mean);
+        monteCarlo->price_master(price,stdDev,var,mean,datas->nbSamples);
         ic = 1.96*stdDev;
-
+        cout << "mean : " << mean << ", var : " << var << endl;
         displayParameters(datas);
         cout << "\n -----> Price [ " << price << " ]\n";
         cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
@@ -149,6 +168,88 @@ void priceAtZero(ParserDatas *datas) {
 
 }
 
+
+void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
+    double start = MPI_Wtime();
+    // Model initialisation
+    BlackScholesModel* model = new BlackScholesModel(
+            datas->option->size_,datas->r,datas->rho,
+            datas->sigma,datas->spot);
+
+    // MonteCarlo initialisation
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD,&size);
+    double mean = 0;
+    double var  = 0;
+    double price;
+    double stdDev = 100;
+    double ic;
+    double nbSamples_Slave = 0;
+    double nbSamples = 0;
+    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep,rank);
+    double espEstimation;
+    double varToAgregate;
+    double nbSamples_tmp = 0;
+    double var_tmp = 0;
+    double mean_tmp = 0;
+
+    while(stdDev > precision) {
+        nbSamples_tmp = 0;
+        mean_tmp = 0;
+        var_tmp = 0;
+        if (rank != 0) {
+            nbSamples_Slave = 500;
+            // compute price
+            //double price;
+            //monteCarlo->price(price,ic);
+            monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
+
+            // Display results
+
+
+        }
+    //PB : MAJ de var et mean
+        MPI_Reduce(&nbSamples_Slave, &nbSamples_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&espEstimation, &mean_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        MPI_Reduce(&varToAgregate, &var_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+        if (rank == 0) {
+            cout << "mean : " << mean;
+            cout << ", var : " << var ;
+            cout << ", nbSamples : "<< nbSamples << endl;
+            nbSamples += nbSamples_tmp;
+            cout << nbSamples;
+            var += var_tmp;
+            mean += mean_tmp;
+            price = 0;
+            monteCarlo->price_master(price, stdDev, var, mean,nbSamples);
+
+        }
+        MPI_Bcast(&stdDev,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+    //Attetion on incrémente pas le nombre d'itération a faire
+
+    }
+
+    if (rank == 0) {
+        double end = MPI_Wtime();
+        ic = 1.96 * stdDev;
+
+        displayParameters(datas);
+        cout << "\n -----> Price [ " << price << " ]\n";
+        cout << "\n -----> IC [ " << price - ic << " ; " << price + ic << " ]" << endl;
+        cout << "\n------> Standard Deviation : " << stdDev << endl;
+        cout << "\n------> Number of Samples : " << nbSamples << endl;
+        cout << "\n------> Time of calculation : " << end - start << "seconds" << endl;
+
+
+    }
+
+    delete model;
+    delete monteCarlo;
+
+}
 
 ParserDatas *parseInputFile(char *infile)
 {

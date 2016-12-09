@@ -200,7 +200,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         mean_tmp = 0;
         var_tmp = 0;
         if (rank != 0) {
-            nbSamples_Slave = 500;
+            nbSamples_Slave = 50;
             // compute price
             //double price;
             //monteCarlo->price(price,ic);

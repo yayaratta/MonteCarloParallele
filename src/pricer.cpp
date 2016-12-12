@@ -111,18 +111,18 @@ void priceAtZero(ParserDatas *datas) {
             datas->sigma,datas->spot);
 
     // MonteCarlo initialisation
-    int rank;
+    int rank = 0;
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    int size;
+    int size = 0;
     MPI_Comm_size(MPI_COMM_WORLD,&size);
-    double mean;
-    double var;
-    double price;
-    double stdDev;
-    double ic;
+    double mean = 0;
+    double var = 0;
+    double price = 0;
+    double stdDev = 0;
+    double ic = 0;
     MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
-    double espEstimation;
-    double varToAgregate;
+    double espEstimation = 0;
+    double varToAgregate = 0;
     if(rank != 0){
 
         // compute price
@@ -177,14 +177,14 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     MPI_Comm_size(MPI_COMM_WORLD,&size);
     double mean = 0;
     double var  = 0;
-    double price;
+    double price = 0;
     double stdDev = 100;
-    double ic;
+    double ic = 0;
     double nbSamples_Slave = 0;
     double nbSamples = 0;
     MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
-    double espEstimation;
-    double varToAgregate;
+    double espEstimation = 0;
+    double varToAgregate = 0;
     double nbSamples_tmp = 0;
     double var_tmp = 0;
     double mean_tmp = 0;

@@ -28,7 +28,6 @@ BlackScholesModel::BlackScholesModel(int size, double r, double rho, PnlVect *si
     if (rho >= 1 || rho <= (-(double)1/(size-1)))
         throw new std::invalid_argument("Correlation not in ]-1/(D-1);1[");
     if (trend == NULL) {
-        cout << "## WARNING : Trend is null, default value " << DEFAULT_VALUE_FOR_TREND << " is used";
         trend_ = pnl_vect_create_from_scalar(size,DEFAULT_VALUE_FOR_TREND);
     }
     else

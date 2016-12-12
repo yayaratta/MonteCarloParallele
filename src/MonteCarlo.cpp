@@ -14,7 +14,6 @@ MonteCarlo::MonteCarlo(BlackScholesModel *model, Option *option, int nbSamples, 
 
 
 void MonteCarlo::price_master(double &prix, double &stdDev, double varEstimateur,double espEstimation,double nbSamples) {
-
     double T = opt_->T_;
     double r = mod_->r_;
     double discountFactor = exp(-r*T);
@@ -24,7 +23,6 @@ void MonteCarlo::price_master(double &prix, double &stdDev, double varEstimateur
     varEstimateur = exp(-2*r*T)*fabs(varEstimateur - espEstimation * espEstimation);
     prix = discountFactor * espEstimation;
     stdDev = sqrt(varEstimateur/nbSamples);
-
 }
 
 void MonteCarlo::price_slave(double &espEstimation, double &varEstimateur,int nbSamples) {

@@ -146,7 +146,6 @@ void priceAtZero(ParserDatas *datas) {
 
         monteCarlo->price_master(price,stdDev,var,mean,datas->nbSamples);
         ic = 1.96*stdDev;
-        cout << "mean : " << mean << ", var : " << var << endl;
         displayParameters(datas);
         cout << "\n -----> Price [ " << price << " ]\n";
         cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
@@ -178,7 +177,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double mean = 0;
     double var  = 0;
     double price = 0;
-    double stdDev = 100;
+    double stdDev = 1000;
     double ic = 0;
     double nbSamples_Slave = 0;
     double nbSamples = 0;
@@ -194,7 +193,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         mean_tmp = 0;
         var_tmp = 0;
         if (rank != 0) {
-            nbSamples_Slave = 50;
+            nbSamples_Slave = 1;
             // compute price
             //double price;
             //monteCarlo->price(price,ic);
@@ -209,11 +208,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         MPI_Reduce(&varToAgregate, &var_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
         if (rank == 0) {
-            cout << "mean : " << mean;
-            cout << ", var : " << var ;
-            cout << ", nbSamples : "<< nbSamples << endl;
             nbSamples += nbSamples_tmp;
-            cout << nbSamples;
             var += var_tmp;
             mean += mean_tmp;
             price = 0;

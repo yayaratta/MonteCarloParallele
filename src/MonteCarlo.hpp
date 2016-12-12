@@ -3,8 +3,10 @@
 #include "Options/Option.hpp"
 #include "BlackScholesModel.hpp"
 #include "pnl/pnl_random.h"
-
-#define DEFAULT_VALUE_FDSTEP 0.00001
+#include "cstdlib"
+#include <math.h>
+#include <time.h>
+#include "iostream"
 #define DEFAULT_VALUE_NBSAMPLES 10000
 
 class MonteCarlo
@@ -13,10 +15,8 @@ public:
     BlackScholesModel *mod_; /*! pointeur vers le modèle */
     Option *opt_; /*! pointeur sur l'option */
     PnlRng *rng_; /*! pointeur sur le générateur */
-    double fdStep_; /*! pas de différence finie */
     int nbSamples_; /*! nombre de tirages Monte Carlo */
     PnlMat *path; /*! path for simulation : initialized one times only*/
-    PnlMat *pathShifted; /*! pathShifted for delta simulation : initialized one times only*/
 
     /**
      * Constructor
@@ -24,9 +24,8 @@ public:
      * @param[in] *model : Le modèle de Black Scholes à utiliser
      * @param[in] *option : L'option à pricer
      * @param[in] nbSamples : Le nombre de tirage de Monte Carlo
-     * @param[in] fdStep : Le pas de différence finie
      */
-    MonteCarlo(BlackScholesModel *model,Option *option, int nbSamples = DEFAULT_VALUE_NBSAMPLES, double fdStep = DEFAULT_VALUE_FDSTEP,double rank=0);
+    MonteCarlo(BlackScholesModel *model,Option *option, int nbSamples = DEFAULT_VALUE_NBSAMPLES, double rank=0);
 
     /**
      * Calcule le prix de l'option à la date 0
@@ -34,10 +33,20 @@ public:
      * @param[out] prix valeur de l'estimateur Monte Carlo
      * @param[out] ic largeur de l'intervalle de confiance
      */
-    void price(double &prix, double &ic);
 
 
-    void price_master(double &prix, double &stdDev,double &varEstimation,double &espEstimation,double nbSamples);
+    /**
+     * Price master qui compute les résultats !
+     *
+     * @param[out] &prix: Calcul du prix à partir du discount factor et de la somme des payoffs simulés.
+     * @param[out] &stdDev : Calcul de l'écart type
+     * @param[in] nbSamples : Le nombre de tirage de Monte Carlo courant ! ( utile pour la partie avec précision )
+     * @param[in] varEstimation : Somme des carrés des payoffs simulés
+     * @param[in] espEstimation : Somme des prix simulé
+     *
+     */
+
+    void price_master(double &prix, double &stdDev,double varEstimation,double espEstimation,double nbSamples);
 
 
     void price_slave(double &espEstimation, double &varEstimation, int nbSamples);

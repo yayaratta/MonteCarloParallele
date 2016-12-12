@@ -49,31 +49,26 @@ void BlackScholesModel::asset(PnlMat *path, double T, int nbTimeSteps, PnlRng *r
     // Step initialisation
     double step = T/(double)nbTimeSteps;
     double sqrtStep = sqrt(step);
+    double sigma_d;
+    double Sd_tiMinus1;
+    double LdGi;
+    double Sd_ti;
     // Spot initialisation
     for (int d = 0; d < path->n; ++d)
         PNL_MSET(path, 0, d, GET(spot_,d));
-    // For the Gaussian vector
-    //PnlVect *Gi = pnl_vect_new();
-    // For multiplication between L and Gi
-    //PnlVect *LGi = pnl_vect_new();
-    // For each time
+
     for (int i = 1; i < path->m; ++i) {
         pnl_vect_rng_normal_d(Gi_,path->n,rng); // Gi gaussian vector
         LGi_ =  pnl_mat_mult_vect(L,Gi_); // All the LdGi
         // For each asset
         for (int d = 0; d < path->n; ++d) {
-            double sigma_d = GET(sigma_,d);
-            double Sd_tiMinus1 = PNL_MGET(path, (i-1), d);
-            double LdGi = GET(LGi_,d);
-
-            double Sd_ti = Sd_tiMinus1 * exp((r_ - sigma_d * sigma_d / 2) * step + sigma_d * sqrtStep * LdGi);
-
+            sigma_d = GET(sigma_,d);
+            Sd_tiMinus1 = PNL_MGET(path, (i-1), d);
+            LdGi = GET(LGi_,d);
+            Sd_ti = Sd_tiMinus1 * exp((r_ - sigma_d * sigma_d / 2) * step + sigma_d * sqrtStep * LdGi);
             PNL_MSET(path,i,d,Sd_ti);
         }
     }
-    // Free
-    //pnl_vect_free(&Gi);
-    //pnl_vect_free(&LGi);
 }
 
 

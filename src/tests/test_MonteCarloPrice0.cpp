@@ -61,17 +61,20 @@ int main(int argc, char** argv){
     cout << "CHECK\n";
 
     double prix, ic;
-
-    monteCarlo->price(prix, ic);
+    double stdDev;
+    double espEstimation, varEstimation;
+    monteCarlo->price_slave(espEstimation, varEstimation, monteCarlo->nbSamples_);
+    monteCarlo->price_master(prix,stdDev,varEstimation,espEstimation,monteCarlo->nbSamples_);
     cout << "Price sur l'option : \n";
     displayOption(*basket);
     cout << "\n---> Prix : " << prix;
     double prixFF;
 
     prixFF = pnl_bs_call(spotV,K,maturity,r,0,sigmaV);
+    ic = 1.96*stdDev;
 
     cout << "\n---> Prix formule fermée : " << prixFF;
-    cout << "\n---> Intervalle de confiance : " << ic;
+    cout << "\n---> Intervalle de confiance : " << "[ " <<  prix - ic << " , " << prix + ic << " ]";
 
     cout << "\n\nCHECK";
 

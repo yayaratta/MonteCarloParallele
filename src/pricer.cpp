@@ -65,7 +65,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision);
 int main(int argc, char **argv){
     MPI_Init(&argc,&argv);    
 //    MPI_Init(&argc, &argv);
-
+    double start;
     ParserDatas *datas;
     char *infile;
     double test = 0;
@@ -73,8 +73,11 @@ int main(int argc, char **argv){
         switch (argc) {
             case 2:
                 infile = argv[1];
+                start = MPI_Wtime();
                 datas = parseInputFile(infile);
                 checkParameters(datas);
+                cout << "J'ai lu le fichier en : " << MPI_Wtime() - start << " secondes !!!!!!!" << endl;
+
                 priceAtZero(datas);
                 break;
             case 3:
@@ -124,20 +127,17 @@ void priceAtZero(ParserDatas *datas) {
     double price;
     double stdDev;
     double ic;
-    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep,rank);
+    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
     double espEstimation;
     double varToAgregate;
     if(rank != 0){
 
-
         // compute price
         //double price;
 
-        double start,end;
         int nbSamples_Slave;
         int temp = datas->nbSamples/(size - 1);
         nbSamples_Slave = (rank <= (datas->nbSamples % (size - 1))) ? (temp + 1) : temp;
-        //monteCarlo->price(price,ic);
         monteCarlo->price_slave(espEstimation,varToAgregate,nbSamples_Slave);
 
         // Display results
@@ -147,7 +147,8 @@ void priceAtZero(ParserDatas *datas) {
 
     MPI_Reduce(&espEstimation,&mean,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     MPI_Reduce(&varToAgregate,&var,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
-    double end = MPI_Wtime();
+
+
     if(rank == 0){
 
         monteCarlo->price_master(price,stdDev,var,mean,datas->nbSamples);
@@ -158,7 +159,7 @@ void priceAtZero(ParserDatas *datas) {
         cout << "\n -----> IC [ " << price - ic << " ; "<< price + ic << " ]" << endl;
         cout << "\n------> Standard Deviation : " << stdDev << endl;
         cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
-        cout << "\n------> Time of calculation : " << end - start << "seconds" << endl;
+        cout << "\n------> Time of calculation : " << MPI_Wtime() - start << "seconds" << endl;
 
 
     }
@@ -188,7 +189,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double ic;
     double nbSamples_Slave = 0;
     double nbSamples = 0;
-    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,datas->fdstep,rank);
+    MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
     double espEstimation;
     double varToAgregate;
     double nbSamples_tmp = 0;
@@ -206,11 +207,10 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
             //monteCarlo->price(price,ic);
             monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
 
-            // Display results
-
 
         }
     //PB : MAJ de var et mean
+
         MPI_Reduce(&nbSamples_Slave, &nbSamples_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(&espEstimation, &mean_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(&varToAgregate, &var_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -233,7 +233,6 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     }
 
     if (rank == 0) {
-        double end = MPI_Wtime();
         ic = 1.96 * stdDev;
 
         displayParameters(datas);
@@ -241,7 +240,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         cout << "\n -----> IC [ " << price - ic << " ; " << price + ic << " ]" << endl;
         cout << "\n------> Standard Deviation : " << stdDev << endl;
         cout << "\n------> Number of Samples : " << nbSamples << endl;
-        cout << "\n------> Time of calculation : " << end - start << "seconds" << endl;
+        cout << "\n------> Time of calculation : " << MPI_Wtime() - start << "seconds" << endl;
 
 
     }

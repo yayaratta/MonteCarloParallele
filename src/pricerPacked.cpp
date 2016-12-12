@@ -73,11 +73,10 @@ int main(int argc, char **argv){
         switch (argc) {
             case 2:case 3:
 
-                //infile = argv[1];
-                //datas = parseInputFile(infile);
-                //checkParameters(datas);
-
                 if(rank == 0){
+//Se poser la question du dividende rate !!!!!! Je crois avoir la réponse mais pas sûr !
+// C'est sur que c'est compris dedans, mais jamais dans
+// les exemples du coup on peut pas vérifier !!!
 
                     //PACKING
                     infile = argv[1];
@@ -90,7 +89,6 @@ int main(int argc, char **argv){
                     int size;
                     int nbSamples;
 
-
                     if(datas->type == "basket"){
                         typeOption = 0;
                     }else if(datas->type == "asian"){
@@ -101,8 +99,6 @@ int main(int argc, char **argv){
                         throw invalid_argument(
                                 "Type Option invalid \n");
                     }
-
-
 
                     // packing des paramètres du problème : 1ère étape, récuperer la taille du buffer
                     char *buffer;
@@ -119,10 +115,6 @@ int main(int argc, char **argv){
                     buffer = (char *)malloc(buffersize);
 
                     // Packing !!!!
-                    cout << "ResPack : " << datas->nbTimeStep << std::endl;
-                    cout << "Impression de weights : " << std::endl;
-                    pnl_vect_print(datas->weights);
-                    cout << endl;
                     info = MPI_Pack(&datas->sigma->size, 1, MPI_INT, buffer, buffersize, &pos, MPI_COMM_WORLD);
                     if(info) return info;
                     info = MPI_Pack(&datas->nbSamples, 1, MPI_INT, buffer, buffersize, &pos, MPI_COMM_WORLD);
@@ -171,10 +163,6 @@ int main(int argc, char **argv){
                     sigma = pnl_vect_create_from_zero(size);
 
 
-
-
-
-
                     info = MPI_Unpack(buffer, buffersize, &pos, &nbSamples, 1, MPI_INT, MPI_COMM_WORLD);
                     if (info) return info;
                     info = MPI_Unpack(buffer, buffersize, &pos, &type, 1, MPI_INT, MPI_COMM_WORLD);
@@ -195,7 +183,6 @@ int main(int argc, char **argv){
                     if (info) return info;
                     info = MPI_Unpack(buffer, buffersize, &pos, sigma->array, size, MPI_DOUBLE, MPI_COMM_WORLD);
                     if (info) return info;
-
 
 
                     if(type == 0){
@@ -222,50 +209,19 @@ int main(int argc, char **argv){
                     datas->spot = spot;
                     datas->sigma = sigma;
 
-
-
-                    displayParameters(datas);
-                    /*
-
-                    cout << "SIZE : " << size << std::endl;
-
-                    cout << "T : " << T << std::endl;
-
-                    cout << "r : " << r << std::endl;
-
-                    cout << "Nb Samples : " << datas->nbSamples << std::endl;
-
-                    cout << "Type option: " << datas->type << std::endl;
-
-                    cout << "Strike : " << datas->strike << std::endl;
-
-                    cout << "nbTimeStep : " << datas->nbTimeStep << std::endl;
-
-                    cout << "rho : " << datas->rho << std::endl;
-                    cout << "Impression de weights : " << std::endl;
-                    pnl_vect_print(datas->weights);
-                    cout << endl;
-                    cout << "Impression de sigma : " << std::endl;
-                    pnl_vect_print(datas->sigma);
-                    cout << endl;
-                    cout << "Impression de spot : " << std::endl;
-                    pnl_vect_print(datas->spot);
-                    cout << endl;
-*/
                     //UNPACKING
 
                 }
-
-
-
 
                 if(argc == 2)
                     priceAtZero(datas);
                 else {
                     test = atof(argv[2]);
+                    if(test == 0){
+                        throw invalid_argument("Invalid argument !! Precision must be > 0 \n");
+                    }
                     priceAtZeroWithPrecision(datas, test);
                 }
-
 
 
                 break;
@@ -282,7 +238,10 @@ int main(int argc, char **argv){
 
 
     // PENSER A FAIRE TOUS LES FREEEEEEE
-    free(datas);
+
+    delete datas->option;
+    delete datas;
+
 
     // Free
     MPI_Finalize();
@@ -308,22 +267,17 @@ void priceAtZero(ParserDatas *datas) {
     double mean = 0;
     double var = 0;
     double price = 0;
-    double stdDev = 0;
+    double stdDev = DOUBLE_MAX;
     double ic = 0;
     MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
     double espEstimation = 0;
     double varToAgregate = 0;
     if(rank != 0){
 
-        // compute price
-        //double price;
         int nbSamples_Slave;
         int temp = datas->nbSamples/(size - 1);
         nbSamples_Slave = (rank <= (datas->nbSamples % (size - 1))) ? (temp + 1) : temp;
         monteCarlo->price_slave(espEstimation,varToAgregate,nbSamples_Slave);
-
-        // Display results
-
 
     }
 
@@ -341,7 +295,8 @@ void priceAtZero(ParserDatas *datas) {
         cout << "\n------> Standard Deviation : " << stdDev << endl;
         cout << "\n------> Number of Samples : " << monteCarlo->nbSamples_ << endl;
         cout << "\n------> Time of calculation : " << MPI_Wtime() - start << "seconds" << endl;
-
+        cout << endl;
+        cout << endl;
 
     }
 
@@ -366,7 +321,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double mean = 0;
     double var  = 0;
     double price = 0;
-    double stdDev = 10000;
+    double stdDev = DOUBLE_MAX;
     double ic = 0;
     double nbSamples_Slave = 0;
     double nbSamples = 0;
@@ -378,19 +333,14 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double mean_tmp = 0;
 
     while(stdDev > precision) {
+        stdDev = 0;
         nbSamples_tmp = 0;
         mean_tmp = 0;
         var_tmp = 0;
         if (rank != 0) {
             nbSamples_Slave = 1;
-            // compute price
-            //double price;
-            //monteCarlo->price(price,ic);
             monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
-
-
         }
-    //PB : MAJ de var et mean
 
         MPI_Reduce(&nbSamples_Slave, &nbSamples_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(&espEstimation, &mean_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -400,13 +350,12 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
             nbSamples += nbSamples_tmp;
             var += var_tmp;
             mean += mean_tmp;
-            price = 0;
             monteCarlo->price_master(price, stdDev, var, mean,nbSamples);
+            if(stdDev == 0)
+                stdDev = DOUBLE_MAX;
 
         }
         MPI_Bcast(&stdDev,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
-    //Attetion on incrémente pas le nombre d'itération a faire
-
     }
 
     if (rank == 0) {
@@ -418,8 +367,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         cout << "\n------> Standard Deviation : " << stdDev << endl;
         cout << "\n------> Number of Samples : " << nbSamples << endl;
         cout << "\n------> Time of calculation : " << MPI_Wtime() - start << "seconds" << endl;
-
-
+        cout << endl;
     }
 
     delete model;
@@ -452,22 +400,16 @@ ParserDatas *parseInputFile(char *infile)
     P->extract("interest rate", r);
     P->extract("correlation",rho);
     P->extract("sample number", n_samples);
-    P->extract("hedging dates number",H);
-    P->extract("fd step", fdStep);
-
-    if (!P->extract("dividend rate", divid, size))
-        divid = pnl_vect_create_from_zero(size);
-
-    // Previous compute of trend with previous data in back/ folder
-    /*double trend_d = r + 0.01;
-    PnlVect *trend = pnl_vect_create_from_scalar(size,trend_d);*/
-
-    P->extract("trend", trend, size);
 
     //Filling the structure parserData
     ParserDatas *data = new ParserDatas();
+
+    if (!P->extract("dividend rate", divid, size)){
+        divid = pnl_vect_create_from_zero(size);
+    }
+
+    data->r = r;
     data -> type = type;
-    data -> r = r;
     data -> rho = rho;
     data -> sigma = sigma;
     data -> spot = spot;
@@ -478,6 +420,7 @@ ParserDatas *parseInputFile(char *infile)
     //Creation de l'option basket
     if (type == "basket")
     {
+        //Creation de l'option basket
         Option *basketOption = new OptionBasket(T,nbTimeStep,size,weights,strike);
         data->option = basketOption;
     }
@@ -496,9 +439,6 @@ ParserDatas *parseInputFile(char *infile)
 }
 
 void checkParameters(ParserDatas *datas){
-    // Lever des erreurs de cette façon :
-    // if (test[datas.x] is false)
-    //      throw invalid_argument("message")
 
     //nbSamples
     if ( datas->nbSamples <= 0 )

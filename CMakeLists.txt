@@ -74,6 +74,9 @@ add_executable(pricer src/parser.cpp src/pricer.cpp src/Options/Option.cpp src/B
 target_link_libraries(pricer ${MPI_LIBS} ${LIBS})
 install(TARGETS pricer DESTINATION bin)
 
+add_executable(pricerPacked src/parser.cpp src/pricerPacked.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp src/Options/OptionBasket.cpp src/Options/AsianOption.cpp src/Options/PerformanceOption.cpp)
+target_link_libraries(pricerPacked ${MPI_LIBS} ${LIBS})
+install(TARGETS pricerPacked DESTINATION bin)
 
 # Print compiler flags
 get_directory_property(DirDefs COMPILE_DEFINITIONS)

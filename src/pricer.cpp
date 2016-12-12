@@ -64,8 +64,6 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision);
 
 int main(int argc, char **argv){
     MPI_Init(&argc,&argv);    
-//    MPI_Init(&argc, &argv);
-    double start;
     ParserDatas *datas;
     char *infile;
     double test = 0;
@@ -73,11 +71,8 @@ int main(int argc, char **argv){
         switch (argc) {
             case 2:
                 infile = argv[1];
-                start = MPI_Wtime();
                 datas = parseInputFile(infile);
                 checkParameters(datas);
-                cout << "J'ai lu le fichier en : " << MPI_Wtime() - start << " secondes !!!!!!!" << endl;
-
                 priceAtZero(datas);
                 break;
             case 3:
@@ -101,8 +96,6 @@ int main(int argc, char **argv){
     // Free
     free(datas);
     MPI_Finalize();
-    //free(datas);
-  //  MPI_Finalize();
     return EXIT_SUCCESS;
 
 }

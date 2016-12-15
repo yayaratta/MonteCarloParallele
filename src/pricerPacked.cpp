@@ -223,6 +223,7 @@ int main(int argc, char **argv){
                     if(test == 0){
                         throw invalid_argument("Invalid argument !! Precision must be > 0 \n");
                     }
+		    test = test / 1.96; 
                     priceAtZeroWithPrecision(datas, test);
                 }
 
@@ -368,7 +369,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
         mean_tmp = 0;
         var_tmp = 0;
         if (rank != 0) {
-            nbSamples_Slave = 1;
+            nbSamples_Slave = 100;
             monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
         }
 

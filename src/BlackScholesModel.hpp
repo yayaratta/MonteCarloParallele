@@ -4,7 +4,6 @@
 #include "pnl/pnl_vector.h"
 #include "pnl/pnl_matrix.h"
 
-/// \brief Modèle de Black Scholes
 class BlackScholesModel
 {
 private:
@@ -13,15 +12,20 @@ public:
     int size_; /// nombre d'actifs du modèle
     double r_; /// taux d'intérêt
     double rho_; /// paramètre de corrélation
-    PnlVect *trend_; /// vecteur de tendances instantanées en probabilité historique
     PnlVect *sigma_; /// vecteur de volatilités
     PnlVect *spot_; /// valeurs initiales du sous-jacent
+    PnlVect *divid_; /// valeurs des dividendes
     PnlVect *Gi_;
     PnlVect *LGi_;
-    int H_;
     double T_;
 
-    BlackScholesModel(int size, double r, double rho, PnlVect *sigma, PnlVect *spot, PnlVect *trend = NULL, int H = 100,double T = 3);
+    /**
+     *
+     * Constructeur de BloackScholesModel
+     *
+     */
+
+    BlackScholesModel(int size, double r, double rho, PnlVect *sigma, PnlVect *spot, PnlVect *divid, double T = 3);
 
 /**
      * Génère une trajectoire du modèle et la stocke dans path

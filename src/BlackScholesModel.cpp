@@ -1,6 +1,4 @@
 #include <iostream>
-#include <stdexcept>
-#include "cstdlib"
 
 
 using namespace std;
@@ -19,28 +17,23 @@ PnlMat *getCholeskyFromRho(int size, double rho);
 
 //////////////// IMPLEMENTATION OF BLACKSCHOLESMODEL CLASS ///////////////////////////
 
-BlackScholesModel::BlackScholesModel(int size, double r, double rho, PnlVect *sigma, PnlVect *spot, PnlVect *trend, int H,double T) :
-        size_(size), r_(r), rho_(rho), sigma_(sigma), spot_(spot), H_(H),T_(T){
+BlackScholesModel::BlackScholesModel(int size, double r, double rho, PnlVect *sigma, PnlVect *spot,
+                                     PnlVect *divid, double T) :
+        size_(size), r_(r), rho_(rho), sigma_(sigma), spot_(spot),divid_(divid),T_(T){
+
     if (sigma->size != size)
         throw new std::invalid_argument("Size of sigma is different of the number of shares");
     if (spot->size != size)
         throw new std::invalid_argument("Size of spot is different of the number of shares");
     if (rho >= 1 || rho <= (-(double)1/(size-1)))
         throw new std::invalid_argument("Correlation not in ]-1/(D-1);1[");
-    if (trend == NULL) {
-        trend_ = pnl_vect_create_from_scalar(size,DEFAULT_VALUE_FOR_TREND);
-    }
-    else
-        trend_ = trend;
-    if (trend_->size != size)
-        throw new std::invalid_argument("Size of trend is different of the number of shares");
 
     // Cholesky initialisation (computed just one time and not for each asset call)
     L = getCholeskyFromRho(size,rho);
     Gi_ = pnl_vect_new();
     LGi_ = pnl_vect_new();
-}
 
+}
 
 
 void BlackScholesModel::asset(PnlMat *path, double T, int nbTimeSteps, PnlRng *rng) {
@@ -64,21 +57,18 @@ void BlackScholesModel::asset(PnlMat *path, double T, int nbTimeSteps, PnlRng *r
             sigma_d = GET(sigma_,d);
             Sd_tiMinus1 = PNL_MGET(path, (i-1), d);
             LdGi = GET(LGi_,d);
-            Sd_ti = Sd_tiMinus1 * exp((r_ - sigma_d * sigma_d / 2) * step + sigma_d * sqrtStep * LdGi);
+            Sd_ti = Sd_tiMinus1 * exp((r_ - GET(divid_,d) - sigma_d * sigma_d / 2) * step + sigma_d * sqrtStep * LdGi);
             PNL_MSET(path,i,d,Sd_ti);
         }
     }
+
 }
 
 
 BlackScholesModel::~BlackScholesModel() {
     pnl_mat_free(&L);
-    pnl_vect_free(&trend_);
-    pnl_vect_free(&spot_);
-    pnl_vect_free(&sigma_);
     pnl_vect_free(&Gi_);
     pnl_vect_free(&LGi_);
-
 }
 
 /////////////////////// IMPLEMENTATION OF FUNCTIONS /////////////////////////

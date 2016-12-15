@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(mc-pricer C CXX)
+project(mc-pricerParallele C CXX)
 
 # Prefix
 if (NOT PREFIX)
@@ -48,31 +48,6 @@ endif()
 
 # Add math lib
 set(LIBS ${LIBS} m)
-# Testing the parser
-
-# Testing pnl Library example
-
-#Testing BlackScholesModel
-#add_executable(BSModelAsset_t-test.te src/tests/test_BlackScholesAsset_t.cpp src/BlackScholesModel.cpp)
-#target_link_libraries(BSModelAsset_t-test.te ${LIBS})
-#add_executable(BSModelAssetShift.te src/tests/test_BlackScholesAssetShift.cpp src/BlackScholesModel.cpp)
-#target_link_libraries(BSModelAssetShift.te ${LIBS})
-#add_executable(BSModelDelta-test0.te src/tests/test_delta0.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-#target_link_libraries(BSModelDelta-test0.te ${LIBS})
-#add_executable(BSModelDelta-test_t.te src/tests/test_delta_t.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp)
-#target_link_libraries(BSModelDelta-test_t.te ${LIBS})
-#Testing MonteCarlo
-add_executable(MonteCarloPrice0-test.te src/tests/test_MonteCarloPrice0.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
-target_link_libraries(MonteCarloPrice0-test.te ${LIBS})
-#add_executable(MonteCarloPrice_t-test.te src/tests/test_MonteCarloPrice_t.cpp src/MonteCarlo.cpp src/BlackScholesModel.cpp src/Options/OptionBasket.cpp src/Options/Option.cpp)
-#target_link_libraries(MonteCarloPrice_t-test.te ${LIBS})
-#Testing Options
-
-#Testing Pricer
-
-add_executable(pricer src/parser.cpp src/pricer.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp src/Options/OptionBasket.cpp src/Options/AsianOption.cpp src/Options/PerformanceOption.cpp)
-target_link_libraries(pricer ${MPI_LIBS} ${LIBS})
-install(TARGETS pricer DESTINATION bin)
 
 add_executable(pricerPacked src/parser.cpp src/pricerPacked.cpp src/Options/Option.cpp src/BlackScholesModel.cpp src/MonteCarlo.cpp src/Options/OptionBasket.cpp src/Options/AsianOption.cpp src/Options/PerformanceOption.cpp)
 target_link_libraries(pricerPacked ${MPI_LIBS} ${LIBS})

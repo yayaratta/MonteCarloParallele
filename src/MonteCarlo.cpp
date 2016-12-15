@@ -1,19 +1,19 @@
-
-//using namespace std;
-
 #include "MonteCarlo.hpp"
 
 MonteCarlo::MonteCarlo(BlackScholesModel *model, Option *option, int nbSamples, double rank) {
+
     mod_ = model;
     opt_ = option;
     rng_ = pnl_rng_dcmt_create_id(rank,PNL_RNG_MERSENNE);
     pnl_rng_sseed(rng_,time(NULL));
     nbSamples_ = nbSamples;
     path = pnl_mat_create(opt_->nbTimeSteps_ + 1, mod_->size_);
+
 }
 
 
 void MonteCarlo::price_master(double &prix, double &stdDev, double varEstimateur,double espEstimation,double nbSamples) {
+
     double T = opt_->T_;
     double r = mod_->r_;
     double discountFactor = exp(-r*T);
@@ -23,6 +23,7 @@ void MonteCarlo::price_master(double &prix, double &stdDev, double varEstimateur
     varEstimateur = exp(-2*r*T)*fabs(varEstimateur - espEstimation * espEstimation);
     prix = discountFactor * espEstimation;
     stdDev = sqrt(varEstimateur/nbSamples);
+
 }
 
 void MonteCarlo::price_slave(double &espEstimation, double &varEstimateur,int nbSamples) {
@@ -51,11 +52,14 @@ double MonteCarlo::payOffSimulation() {
     payOffSimu = opt_->payoff(path);
 
     return payOffSimu;
+
 }
 
 
 
 MonteCarlo::~MonteCarlo() {
+
     pnl_rng_free(&rng_);
     pnl_mat_free(&path);
+
 }

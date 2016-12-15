@@ -29,6 +29,7 @@ typedef struct {
     PnlVect* sigma; /// Asset volatilities
     PnlVect* spot; /// Asset spots
     PnlVect* trend; /// Asset trends
+    PnlVect* divid; /// divid
 } ParserDatas;
 
 /**
@@ -108,7 +109,7 @@ void priceAtZero(ParserDatas *datas) {
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
-            datas->sigma,datas->spot);
+            datas->sigma,datas->spot, datas->divid, datas->option->T_);
 
     // MonteCarlo initialisation
     int rank = 0;
@@ -167,7 +168,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
-            datas->sigma,datas->spot);
+            datas->sigma,datas->spot, datas->divid,datas->option->T_);
 
     // MonteCarlo initialisation
     int rank;

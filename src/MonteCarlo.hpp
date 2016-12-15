@@ -24,15 +24,9 @@ public:
      * @param[in] *model : Le modèle de Black Scholes à utiliser
      * @param[in] *option : L'option à pricer
      * @param[in] nbSamples : Le nombre de tirage de Monte Carlo
+     * @param[in] rank : Afin d'avoir des générateurs aléatoires indépendants
      */
     MonteCarlo(BlackScholesModel *model,Option *option, int nbSamples = DEFAULT_VALUE_NBSAMPLES, double rank=0);
-
-    /**
-     * Calcule le prix de l'option à la date 0
-     *
-     * @param[out] prix valeur de l'estimateur Monte Carlo
-     * @param[out] ic largeur de l'intervalle de confiance
-     */
 
 
     /**

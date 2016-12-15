@@ -2,18 +2,16 @@
 #include <cstdlib>
 #include <iostream>
 #include "MonteCarlo.hpp"
-#include "BlackScholesModel.hpp"
-#include "Options/Option.hpp"
 #include <mpi.h>
 #include "../src/parser.hpp"
 #include "Options/OptionBasket.hpp"
 #include "Options/AsianOption.hpp"
 #include "Options/PerformanceOption.hpp"
-#include <string>
 
 using namespace std;
-
-//////////////////////////////////// PROTOTYPE ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////// PROTOTYPE ////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 /**
  * parserData is a structure due to store datas when parsing input file.
@@ -29,6 +27,7 @@ typedef struct {
     PnlVect* sigma; /// Asset volatilities
     PnlVect* spot; /// Asset spots
     PnlVect* weights; /// weights option for packing
+    PnlVect* divid; /// divid
 } ParserDatas;
 
 /**
@@ -37,12 +36,7 @@ typedef struct {
  * @param[in] ParserDatas contenant l'option et les paramètres pour le pricing
  */
 void priceAtZero(ParserDatas *datas);
-/**
- * Permet de calculer le PnL d'une option avec différents paramètres
- *
- * @param[in] ParserDatas contenant l'option et les paramètres pour le pricing
- */
-void computePnL(ParserDatas *datas);
+
 /**
  * Permet de parser le fichier en input
  *
@@ -58,7 +52,16 @@ ParserDatas *parseInputFile(char *infile);
  */
 void checkParameters(ParserDatas *datas);
 
+
+/**
+ * Permet de pricer à t=0 une option pour différents paramètres
+ *
+ * @param[in] ParserDatas contenant l'option et les paramètres pour le pricing
+ * @param[in] precision afin d'indiquer la précision pour pouvoir retourner le bon prix
+ */
 void priceAtZeroWithPrecision(ParserDatas *datas,double precision);
+
+
 void displayParameters(ParserDatas *datas);
 //////////////////////////////////// MAIN ///////////////////////////////////////////
 
@@ -74,20 +77,12 @@ int main(int argc, char **argv){
             case 2:case 3:
 
                 if(rank == 0){
-//Se poser la question du dividende rate !!!!!! Je crois avoir la réponse mais pas sûr !
-// C'est sur que c'est compris dedans, mais jamais dans
-// les exemples du coup on peut pas vérifier !!!
 
                     //PACKING
                     infile = argv[1];
                     datas = parseInputFile(infile);
                     checkParameters(datas);
-
-                    double T, r, strike, rho, fdStep;
-                    PnlVect *spot, *sigma, *weights;
                     int typeOption;
-                    int size;
-                    int nbSamples;
 
                     if(datas->type == "basket"){
                         typeOption = 0;
@@ -106,11 +101,10 @@ int main(int argc, char **argv){
                     info = MPI_Pack_size(4, MPI_INT, MPI_COMM_WORLD, &count);
                     if (info) return info;
                     buffersize += count;
-                    int pnlSize = (3 * datas->sigma->size);
+                    int pnlSize = (4 * datas->sigma->size);
                     info = MPI_Pack_size(4 + pnlSize , MPI_DOUBLE, MPI_COMM_WORLD, &count);
                     if (info) return info;
                     buffersize += count;
-
 
                     buffer = (char *)malloc(buffersize);
 
@@ -131,14 +125,18 @@ int main(int argc, char **argv){
                     if(info) return info;
                     info = MPI_Pack(&datas->rho, 1, MPI_DOUBLE, buffer, buffersize, &pos, MPI_COMM_WORLD);
                     if(info) return info;
+
+                    // Envoie des Pnl vect
                     info = MPI_Pack(datas->weights->array, datas->sigma->size, MPI_DOUBLE, buffer, buffersize, &pos, MPI_COMM_WORLD);
                     if(info) return info;
                     info = MPI_Pack(datas->spot->array, datas->sigma->size, MPI_DOUBLE, buffer, buffersize, &pos, MPI_COMM_WORLD);
                     if(info) return info;
                     info = MPI_Pack(datas->sigma->array, datas->sigma->size, MPI_DOUBLE, buffer, buffersize, &pos, MPI_COMM_WORLD);
                     if(info) return info;
+                    info = MPI_Pack(datas->divid->array, datas->sigma->size, MPI_DOUBLE, buffer, buffersize, &pos, MPI_COMM_WORLD);
+                    if(info) return info;
 
-
+                    // Bcast du buffer pour que tous les processus aient le même
                     MPI_Bcast(&buffersize, 1, MPI_INT, 0, MPI_COMM_WORLD);
                     MPI_Bcast(buffer, buffersize, MPI_PACKED, 0, MPI_COMM_WORLD);
 
@@ -148,7 +146,9 @@ int main(int argc, char **argv){
                     int info, buffersize,pos = 0,size=0,nbSamples,nbTimeStep;
                     double T = 0, r=0,strike = 0,rho;
                     int type = 0;
-                    PnlVect * weights, *spot, *sigma;
+                    PnlVect * weights, *spot, *sigma, *divid;
+
+                    //UNPACKING
                     info = MPI_Bcast(&buffersize, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
                     if (info) return info;
@@ -161,7 +161,7 @@ int main(int argc, char **argv){
                     weights = pnl_vect_create_from_zero(size);
                     spot = pnl_vect_create_from_zero(size);
                     sigma = pnl_vect_create_from_zero(size);
-
+                    divid = pnl_vect_create_from_zero(size);
 
                     info = MPI_Unpack(buffer, buffersize, &pos, &nbSamples, 1, MPI_INT, MPI_COMM_WORLD);
                     if (info) return info;
@@ -183,7 +183,11 @@ int main(int argc, char **argv){
                     if (info) return info;
                     info = MPI_Unpack(buffer, buffersize, &pos, sigma->array, size, MPI_DOUBLE, MPI_COMM_WORLD);
                     if (info) return info;
+                    info = MPI_Unpack(buffer, buffersize, &pos, divid->array, size, MPI_DOUBLE, MPI_COMM_WORLD);
+                    if (info) return info;
 
+
+                    // Reconstruction de la struture data pour donner les bons paramètres aux fonctions de pricing !
 
                     if(type == 0){
                         datas ->type = "basket";
@@ -193,7 +197,6 @@ int main(int argc, char **argv){
                         datas->type = "asian";
                         Option *asianOption = new AsianOption(T,nbTimeStep,size,weights,strike);
                         datas->option = asianOption;
-
                     }else{
                         datas->type = "performance";
                         Option *performanceOption = new PerformanceOption(T, nbTimeStep, size, weights);
@@ -208,8 +211,8 @@ int main(int argc, char **argv){
                     datas->weights = weights;
                     datas->spot = spot;
                     datas->sigma = sigma;
+                    datas->divid = divid;
 
-                    //UNPACKING
 
                 }
 
@@ -236,28 +239,44 @@ int main(int argc, char **argv){
         return EXIT_FAILURE;
     }
 
-
-    // PENSER A FAIRE TOUS LES FREEEEEEE
-
+    // Free
+    pnl_vect_free(&(datas->divid));
+    pnl_vect_free(&(datas->spot));
+    pnl_vect_free(&(datas->weights));
+    pnl_vect_free(&(datas->sigma));
     delete datas->option;
     delete datas;
 
-
-    // Free
     MPI_Finalize();
     return EXIT_SUCCESS;
 
 }
 
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////// IMPLEMENTATION ///////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////////////
 
 void displayParameters(ParserDatas *datas);
+
+
+/**
+ *
+ * PriceAtZero
+ *
+ *
+ */
+
+
+
 void priceAtZero(ParserDatas *datas) {
-    double start = MPI_Wtime();
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
-            datas->sigma,datas->spot);
+            datas->sigma,datas->spot,datas->divid,datas->option->T_);
 
     // MonteCarlo initialisation
     int rank = 0;
@@ -272,6 +291,7 @@ void priceAtZero(ParserDatas *datas) {
     MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
     double espEstimation = 0;
     double varToAgregate = 0;
+    double start = MPI_Wtime();
     if(rank != 0){
 
         int nbSamples_Slave;
@@ -306,12 +326,22 @@ void priceAtZero(ParserDatas *datas) {
 }
 
 
+
+
+    /**
+     * priceAtZeraWithPrecision
+     *
+     *
+     *
+     *
+     */
+
+
 void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
-    double start = MPI_Wtime();
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
-            datas->sigma,datas->spot);
+            datas->sigma,datas->spot,datas->divid,datas->option->T_);
 
     // MonteCarlo initialisation
     int rank;
@@ -331,7 +361,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double nbSamples_tmp = 0;
     double var_tmp = 0;
     double mean_tmp = 0;
-
+    double start = MPI_Wtime();
     while(stdDev > precision) {
         stdDev = 0;
         nbSamples_tmp = 0;
@@ -377,6 +407,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
 
 ParserDatas *parseInputFile(char *infile)
 {
+
     double T, r, strike, rho, fdStep;
     PnlVect *spot, *sigma, *divid, *weights, *trend;
     string type;
@@ -417,6 +448,7 @@ ParserDatas *parseInputFile(char *infile)
     data -> strike = strike;
     data -> nbTimeStep = nbTimeStep;
     data -> weights = weights;
+    data -> divid = divid;
     //Creation de l'option basket
     if (type == "basket")
     {
@@ -436,6 +468,7 @@ ParserDatas *parseInputFile(char *infile)
     }
 
     return data;
+
 }
 
 void checkParameters(ParserDatas *datas){
@@ -460,16 +493,18 @@ void checkParameters(ParserDatas *datas){
         throw invalid_argument("Invalid negative volatility in volatility vector");
     }
 
-
 }
 
 void displayParameters(ParserDatas *datas){
-    cout << "\n**** DATAS ****";
+
+    cout << endl;
+    cout << "\n***** DATAS *****";
     cout << "\n* Free risk rate : " << datas->r;
     cout << "\n* Correlation : " << datas->rho;
     cout << "\n* Volatility (first) : " << GET(datas->sigma,0);
     cout << "\n* Samples number : " << datas->nbSamples;
     cout << "\n* Spots (first) : " << GET(datas->spot,0);
+    cout << "\n* Divid (first) : " << GET(datas->divid,0);
 
     cout << "\n**** OPTION ****";
     cout << "\n* Type : " << datas->type;
@@ -477,4 +512,5 @@ void displayParameters(ParserDatas *datas){
     cout << "\n* Maturity : " << datas->option->T_;
     cout << "\n* Time step number : " << datas->option->nbTimeSteps_;
     cout << "\n*****************\n";
+
 }

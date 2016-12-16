@@ -71,7 +71,8 @@ int main(int argc, char **argv){
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     ParserDatas  *datas;
     char *infile;
-    double test = 0;
+    double ic = 0;
+    double stdDev = 0;
     try {
         switch (argc) {
             case 2:case 3:
@@ -219,12 +220,12 @@ int main(int argc, char **argv){
                 if(argc == 2)
                     priceAtZero(datas);
                 else {
-                    test = atof(argv[2]);
-                    if(test == 0){
+                    ic = atof(argv[2]);
+                    if(ic == 0){
                         throw invalid_argument("Invalid argument !! Precision must be > 0 \n");
                     }
-		            test = test / 1.96;
-                    priceAtZeroWithPrecision(datas, test);
+		            stdDev = ic / (2*1.96);
+                    priceAtZeroWithPrecision(datas, stdDev);
                 }
 
 

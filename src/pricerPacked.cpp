@@ -223,7 +223,7 @@ int main(int argc, char **argv){
                     if(test == 0){
                         throw invalid_argument("Invalid argument !! Precision must be > 0 \n");
                     }
-		    test = test / 1.96; 
+		            test = test / 1.96;
                     priceAtZeroWithPrecision(datas, test);
                 }
 
@@ -293,14 +293,12 @@ void priceAtZero(ParserDatas *datas) {
     double espEstimation = 0;
     double varToAgregate = 0;
     double start = MPI_Wtime();
-    if(rank != 0){
 
-        int nbSamples_Slave;
-        int temp = datas->nbSamples/(size - 1);
-        nbSamples_Slave = (rank <= (datas->nbSamples % (size - 1))) ? (temp + 1) : temp;
-        monteCarlo->price_slave(espEstimation,varToAgregate,nbSamples_Slave);
+    int nbSamples_Slave;
+    int temp = datas->nbSamples/(size);
+    nbSamples_Slave = (rank <= (datas->nbSamples % (size))) ? (temp + 1) : temp;
+    monteCarlo->price_slave(espEstimation,varToAgregate,nbSamples_Slave);
 
-    }
 
     MPI_Reduce(&espEstimation,&mean,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
     MPI_Reduce(&varToAgregate,&var,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
@@ -338,7 +336,7 @@ void priceAtZero(ParserDatas *datas) {
      */
 
 
-void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
+void priceAtZeroWithPrecision(ParserDatas *datas,double stdDevIn) {
     // Model initialisation
     BlackScholesModel* model = new BlackScholesModel(
             datas->option->size_,datas->r,datas->rho,
@@ -354,7 +352,7 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double price = 0;
     double stdDev = DOUBLE_MAX;
     double ic = 0;
-    double nbSamples_Slave = 0;
+    double nbSamples_Slave = 500;
     double nbSamples = 0;
     MonteCarlo* monteCarlo = new MonteCarlo(model,datas->option,datas->nbSamples,rank);
     double espEstimation = 0;
@@ -363,15 +361,13 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
     double var_tmp = 0;
     double mean_tmp = 0;
     double start = MPI_Wtime();
-    while(stdDev > precision) {
+    while(stdDev > stdDevIn) {
         stdDev = 0;
         nbSamples_tmp = 0;
         mean_tmp = 0;
         var_tmp = 0;
-        if (rank != 0) {
-            nbSamples_Slave = 100;
-            monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
-        }
+        nbSamples_Slave = 500;
+        monteCarlo->price_slave(espEstimation, varToAgregate, nbSamples_Slave);
 
         MPI_Reduce(&nbSamples_Slave, &nbSamples_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         MPI_Reduce(&espEstimation, &mean_tmp, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -381,12 +377,15 @@ void priceAtZeroWithPrecision(ParserDatas *datas,double precision) {
             nbSamples += nbSamples_tmp;
             var += var_tmp;
             mean += mean_tmp;
+
             monteCarlo->price_master(price, stdDev, var, mean,nbSamples);
             if(stdDev == 0)
                 stdDev = DOUBLE_MAX;
-
         }
+        MPI_Bcast(&nbSamples_Slave, 1, MPI_INT, 0, MPI_COMM_WORLD);
         MPI_Bcast(&stdDev,1,MPI_DOUBLE,0,MPI_COMM_WORLD);
+        if(nbSamples > MAX_INT/2)
+            break;
     }
 
     if (rank == 0) {
